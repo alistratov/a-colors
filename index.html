@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Color Distance – IB Math SL Study</title>
+  <style>
+    :root { --gap: 16px; --card: 180px; --accent: #222; --muted: #666; }
+    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #fafafa; color: #111; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 24px; }
+    h1, h2, h3 { margin: 0 0 12px; }
+    p { line-height: 1.5; color: #222; }
+    .card { background: white; border: 1px solid #ddd; border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+    .center { text-align: center; }
+    .controls { display: flex; gap: var(--gap); align-items: center; justify-content: center; flex-wrap: wrap; }
+    button { padding: 10px 16px; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: 600; }
+    button.primary { background: #111; color: white; border-color: #111; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .swatches { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin: 16px 0; }
+    .swatch { height: var(--card); border-radius: 12px; border: 1px solid rgba(0,0,0,.15); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+    .meter { display: grid; gap: 8px; }
+    input[type=range] { width: 100%; }
+    .muted { color: var(--muted); font-size: .95rem; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin-bottom: 16px; }
+    .badge { background: #eee; padding: 6px 10px; border-radius: 999px; font-size: .9rem; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    ul { margin: .5em 0 .5em 1.5em; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="badge" id="participantBadge">Participant: —</div>
+    <div class="controls">
+      <button id="resetBtn" title="Clear local data & restart">Reset</button>
+    </div>
+  </div>
+
+  <!-- Intro / Consent Panel -->
+  <section id="intro" class="panel card">
+    <h1>Color Distance Study</h1>
+    <p>This small research project explores how people perceive differences between colors and which color models best match human perception. You will see pairs of color cards and rate how similar they feel on a scale from <strong>0</strong> (maximally different) to <strong>100</strong> (identical).</p>
+
+    <h3>Examples</h3>
+    <ul>
+      <li><span class="mono">#000000</span> vs <span class="mono">#FFFFFF</span> → typically near <strong>0</strong>.</li>
+      <li>Two identical colors (e.g., <span class="mono">#42A5F5</span> vs <span class="mono">#42A5F5</span>) → <strong>100</strong>.</li>
+    </ul>
+
+    <h3>How it works</h3>
+    <ul>
+      <li>Rate as many pairs as you like; you can stop at any time.</li>
+      <li>Your <em>name</em> and your <em>completed ratings count</em> are stored only in your browser (local storage) to show progress. You can erase them with “Reset”.</li>
+      <li>Each rating you submit is sent to our server with: name, Color A, Color B, and your score (0–100).</li>
+    </ul>
+
+    <h3>Privacy & consent</h3>
+    <p class="muted">We collect only what you type as a name (can be a nickname), plus your ratings. No passwords. No demographic data. The dataset will be used for a school math project (IB Math SL) to compare color models. Aggregated, anonymized results may be shared in the project report or a class presentation. By pressing “Start”, you consent to participate. You can withdraw any time by closing the page; to clear local info, press “Reset”.</p>
+
+    <div class="card" style="margin-top:16px;">
+      <label for="name"><strong>How should we refer to you?</strong> (nickname or first name)</label><br>
+      <input id="name" type="text" placeholder="e.g., Alex" style="width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;margin-top:6px;" />
+      <div class="controls" style="margin-top:14px;">
+        <button id="startBtn" class="primary">Start</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rating Panel -->
+  <section id="rating" class="panel card">
+    <h2 class="center">Rate the similarity between these two colors</h2>
+    <div class="swatches">
+      <div class="swatch" id="swA" aria-label="Color A"></div>
+      <div class="swatch" id="swB" aria-label="Color B"></div>
+    </div>
+
+    <div class="meter">
+      <div class="row">
+        <div class="muted">0 = maximally different</div>
+        <div class="muted" style="text-align:right;">100 = identical</div>
+      </div>
+      <input id="slider" type="range" min="0" max="100" step="1" value="50" />
+      <div class="center">Your score: <span id="score">50</span></div>
+    </div>
+
+    <div class="controls" style="margin-top:14px;">
+      <button id="submitBtn" class="primary">Submit</button>
+      <button id="skipBtn" title="Show another pair without submitting">Skip</button>
+    </div>
+
+    <p class="muted center" style="margin-top:10px;">Completed ratings: <span id="done">0</span></p>
+  </section>
+</div>
+
+<script>
+  // === Configuration ===
+  const BACKEND_URL = 'http://localhost:28080/submit'; // change if your backend runs elsewhere
+
+  // Predefined pairs (to gather many ratings on comparable stimuli)
+  // Format: ["#RRGGBB", "#RRGGBB"]
+  const PREDEFINED = [
+    // Extremes & controls
+    ['#000000', '#FFFFFF'],
+    ['#FF0000', '#00FF00'],
+    ['#0000FF', '#FFFF00'],
+    ['#42A5F5', '#42A5F5'], // identical
+
+    // Same lightness, different hue (approx.)
+    ['#D32F2F', '#7B1FA2'], // red vs purple-ish
+    ['#388E3C', '#1976D2'], // green vs blue
+
+    // Small deltas
+    ['#808080', '#8A8A8A'],
+    ['#F44336', '#F55547'],
+    ['#03A9F4', '#00A4EF'],
+
+    // Gray steps
+    ['#202020', '#303030'],
+    ['#B0B0B0', '#B8B8B8'],
+
+    // Yellow variations with similar luminance
+    ['#F4D03F', '#F1C40F'],
+    ['#F4D03F', '#EFD76A'],
+  ];
+
+  // Random color helpers
+  function randHex() {
+    return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
+  }
+  function nextRandomPair() {
+    let a = randHex();
+    let b = randHex();
+    // prevent identical randoms too often
+    if (a === b) b = randHex();
+    return [a, b];
+  }
+
+  // Queue that starts with predefined, then infinite randoms
+  let queue = PREDEFINED.slice();
+  function nextPair() {
+    if (queue.length > 0) return queue.shift();
+    return nextRandomPair();
+  }
+
+  // DOM
+  const intro = document.getElementById('intro');
+  const rating = document.getElementById('rating');
+  const swA = document.getElementById('swA');
+  const swB = document.getElementById('swB');
+  const slider = document.getElementById('slider');
+  const score = document.getElementById('score');
+  const submitBtn = document.getElementById('submitBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const done = document.getElementById('done');
+  const nameInput = document.getElementById('name');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const participantBadge = document.getElementById('participantBadge');
+
+  // Local storage keys
+  const LS_NAME = 'cd_name';
+  const LS_COUNT = 'cd_count';
+
+  // State
+  let participant = localStorage.getItem(LS_NAME) || '';
+  let count = parseInt(localStorage.getItem(LS_COUNT) || '0', 10);
+  let current = nextPair();
+
+  function setPanel(showRating) {
+    intro.classList.toggle('active', !showRating);
+    rating.classList.toggle('active', showRating);
+  }
+
+  function render() {
+    participantBadge.textContent = 'Participant: ' + (participant || '—');
+    done.textContent = String(count);
+    swA.style.background = current[0];
+    swB.style.background = current[1];
+  }
+
+  function start() {
+    participant = (nameInput.value || '').trim();
+    if (!participant) { alert('Please enter a name or nickname to proceed.'); return; }
+    localStorage.setItem(LS_NAME, participant);
+    setPanel(true);
+    render();
+  }
+
+  function resetAll() {
+    localStorage.removeItem(LS_NAME);
+    localStorage.removeItem(LS_COUNT);
+    participant = '';
+    count = 0;
+    queue = PREDEFINED.slice();
+    current = nextPair();
+    slider.value = 50; score.textContent = '50';
+    setPanel(false);
+    render();
+  }
+
+  async function submit() {
+    submitBtn.disabled = true;
+    const payload = { name: participant, colorA: current[0], colorB: current[1], score: Number(slider.value) };
+    try {
+      const res = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Server responded ' + res.status);
+      count += 1;
+      localStorage.setItem(LS_COUNT, String(count));
+      current = nextPair();
+      slider.value = 50; score.textContent = '50';
+      render();
+    } catch (err) {
+      console.error(err);
+      alert('Could not submit rating. Is the backend running at ' + BACKEND_URL + ' ?');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  function skip() {
+    current = nextPair();
+    slider.value = 50; score.textContent = '50';
+    render();
+  }
+
+  // Wiring
+  slider.addEventListener('input', () => { score.textContent = slider.value; });
+  submitBtn.addEventListener('click', submit);
+  skipBtn.addEventListener('click', skip);
+  startBtn.addEventListener('click', start);
+  resetBtn.addEventListener('click', resetAll);
+
+  // Initial load
+  if (participant) {
+    nameInput.value = participant;
+    setPanel(true);
+  } else {
+    setPanel(false);
+  }
+  render();
+</script>
+</body>
+</html>
