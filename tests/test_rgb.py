@@ -1,7 +1,7 @@
 import unittest
 import math
 
-from colors.convert import srgb_to_linear, linear_to_srgb
+from colors.convert import _srgb_to_linear, _linear_to_srgb
 from colors.models import RGBDisplay, RGBLinear
 
 
@@ -33,13 +33,17 @@ class TestRGB(unittest.TestCase):
 
             # To and from 8bit integers
             a = cls.from_8bit(20, 100, 200)
+            self.assertIsInstance(a, cls)
             self.assertEqual(a.to_8bit(), (20, 100, 200))
             self.assertAlmostEqual(a.r, 20.0 / 255.0)
             self.assertAlmostEqual(a.g, 100 / 255.0)
             self.assertAlmostEqual(a.b, 200 / 255.0)
+
             h = a.to_hex()
             self.assertEqual(h, "#1464C8")
+
             b = cls.from_hex(h)
+            self.assertIsInstance(b, cls)
             self.assertEqual(b.to_8bit(), (20, 100, 200))
 
     def test_equality(self):
@@ -60,18 +64,18 @@ class TestRGB(unittest.TestCase):
 
     def test_srgb_to_linear_and_back(self):
         # Test known values
-        self.assertAlmostEqual(srgb_to_linear(0.0), 0.0)
-        self.assertAlmostEqual(srgb_to_linear(0.04045), 0.0031308, places=6)
-        self.assertAlmostEqual(srgb_to_linear(1.0), 1.0)
+        self.assertAlmostEqual(_srgb_to_linear(0.0), 0.0)
+        self.assertAlmostEqual(_srgb_to_linear(0.04045), 0.0031308, places=6)
+        self.assertAlmostEqual(_srgb_to_linear(1.0), 1.0)
 
-        self.assertAlmostEqual(linear_to_srgb(0.0), 0.0)
-        self.assertAlmostEqual(linear_to_srgb(0.0031308), 0.04045, places=6)
-        self.assertAlmostEqual(linear_to_srgb(1.0), 1.0)
+        self.assertAlmostEqual(_linear_to_srgb(0.0), 0.0)
+        self.assertAlmostEqual(_linear_to_srgb(0.0031308), 0.04045, places=6)
+        self.assertAlmostEqual(_linear_to_srgb(1.0), 1.0)
 
         for i in range(0, 256):
             c = i / 255.0
-            lin = srgb_to_linear(c)
-            srgb = linear_to_srgb(lin)
+            lin = _srgb_to_linear(c)
+            srgb = _linear_to_srgb(lin)
             self.assertAlmostEqual(c, srgb, places=5)
             self.assertTrue(0.0 <= lin <= 1.0)
 
