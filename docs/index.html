@@ -100,30 +100,55 @@
   const BACKEND_URL = 'http://localhost:28080/submit'; // change if your backend runs elsewhere
 
   // Predefined pairs (to gather many ratings on comparable stimuli)
-  // Format: ["#RRGGBB", "#RRGGBB"]
   const PREDEFINED = [
-    // Extremes & controls
-    ['#000000', '#FFFFFF'],
-    ['#FF0000', '#00FF00'],
-    ['#0000FF', '#FFFF00'],
-    ['#42A5F5', '#42A5F5'], // identical
-
-    // Same lightness, different hue (approx.)
-    ['#D32F2F', '#7B1FA2'], // red vs purple-ish
-    ['#388E3C', '#1976D2'], // green vs blue
-
-    // Small deltas
-    ['#808080', '#8A8A8A'],
-    ['#F44336', '#F55547'],
-    ['#03A9F4', '#00A4EF'],
-
-    // Gray steps
-    ['#202020', '#303030'],
-    ['#B0B0B0', '#B8B8B8'],
-
-    // Yellow variations with similar luminance
-    ['#F4D03F', '#F1C40F'],
-    ['#F4D03F', '#EFD76A'],
+      ['#FFD700', '#FFD700'],
+      ['#964600', '#964600'],
+      ['#14960A', '#14960A'],
+      ['#000000', '#FFFFFF'],
+      ['#FF0000', '#00FFFF'],
+      ['#0057B7', '#FFD700'],
+      ['#191919', '#E5E5E5'],
+      ['#333333', '#CCCCCC'],
+      ['#4C4C4C', '#B2B2B2'],
+      ['#666666', '#999999'],
+      ['#002FA7', '#00005C'],
+      ['#FF00FF', '#DF00FF'],
+      ['#C41E3A', '#DF73FF'],
+      ['#C3B091', '#BDB76B'],
+      ['#808000', '#9AB973'],
+      ['#40E0D0', '#99FF99'],
+      ['#FF7F50', '#B7410E'],
+      ['#964B00', '#D2B48C'],
+      ['#000080', '#0F52BA'],
+      ['#FFF8E7', '#FFFDD0'],
+      ['#BDFCC9', '#F5FFFA'],
+      ['#E6E6FA', '#D8BFD8'],
+      ['#FA8072', '#FFA07A'],
+      ['#FFD700', '#CC7722'],
+      ['#C0FF00', '#FFBA00'],
+      ['#FF0000', '#00FFFF'],
+      ['#FF7F7F', '#99FF7F'],
+      ['#2D77E5', '#E52D9C'],
+      ['#CBFF00', '#F4FFCC'],
+      ['#2800CC', '#9B8ECC'],
+      ['#11B252', '#6BB287'],
+      ['#A3BFCC', '#008ECC'],
+      ['#B2A0AB', '#B22379'],
+      ['#00FF66', '#004C1E'],
+      ['#E52D9C', '#661445'],
+      ['#CC923D', '#33240F'],
+      ['#E59C2D', '#7F5619'],
+      ['#5B92E5', '#284166'],
+      ['#CC8214', '#5B994C'],
+      ['#4C607F', '#E52D9C'],
+      ['#787878', '#828282'],
+      ['#F0F0E6', '#FAFAF0'],
+      ['#001900', '#E5FFE5'],
+      ['#111110', '#4016E5'],
+      ['#494854', '#ABF60D'],
+      ['#1AF000', '#0B09F2'],
+      ['#CB00D6', '#07EB1D'],
+      ['#B98602', '#4904E4'],
   ];
 
   // Random color helpers
