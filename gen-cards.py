@@ -245,7 +245,7 @@ def generate():
             f.write(js_code)
             temp_js_path = Path(f.name)
             webbrowser.open_new_tab(temp_js_path.as_uri())
-    write_to_js()
+    # write_to_js()
 
 if __name__ == '__main__':
     generate()

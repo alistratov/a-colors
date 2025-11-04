@@ -1,8 +1,7 @@
 """
 Minimal backend for Color‑Distance Study
-- Standard library only
 - Accepts POST /submit with JSON: {name, colorA, colorB, score}
-- Appends a TSV line to ratings.tsv: name colorA colorB score\n
+- Appends a TSV line to ratings.tsv: timestamp name colorA colorB score\n
 CORS enabled for simplicity (Access-Control-Allow-Origin: *).
 """
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -18,7 +17,7 @@ PORT = int(os.environ.get('PORT', '28080'))
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "ColorDistance/1.0"
+    server_version = "ColorDistanceStudy/1.0"
 
     def _set_cors(self):
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -41,11 +40,13 @@ class Handler(BaseHTTPRequestHandler):
             raw = self.rfile.read(length) if length else b''
             data = json.loads(raw.decode('utf-8'))
             name = str(data.get('name', '')).strip()
+            # Replace all whitespace characters with spaces
+            name = ' '.join(name.split())
             colorA = str(data.get('colorA', '')).strip()
             colorB = str(data.get('colorB', '')).strip()
             score = int(data.get('score'))
             if not name or not colorA or not colorB or not (0 <= score <= 100):
-                raise ValueError('invalid payload')
+                raise ValueError('Invalid payload')
         except Exception:
             self.send_response(400)
             self._set_cors()
@@ -53,7 +54,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         # Append TSV line
-        line = f"{name}\t{colorA}\t{colorB}\t{score}\n"
+        timestamp = int(time.time())
+        line = f"{timestamp}\t{name}\t{colorA}\t{colorB}\t{score}\n"
         # Ensure directory exists if path includes folders
         os.makedirs(os.path.dirname(OUTPUT_FILE) or '.', exist_ok=True)
         with open(OUTPUT_FILE, 'a', encoding='utf-8') as f:
