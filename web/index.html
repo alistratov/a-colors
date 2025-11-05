@@ -28,6 +28,15 @@
     .panel.active { display: block; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     ul { margin: .5em 0 .5em 1.5em; }
+    .color-chip {
+      display: inline-block;
+      width: 1.4em;
+      height: 1.4em;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,.25);
+      margin: 0 0.25em;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -46,14 +55,25 @@
 
     <h3>Examples</h3>
     <ul>
-      <li><span class="mono">#000000</span> vs <span class="mono">#FFFFFF</span> → typically near <strong>0</strong>.</li>
-      <li>Two identical colors (e.g., <span class="mono">#42A5F5</span> vs <span class="mono">#42A5F5</span>) → <strong>100</strong>.</li>
+      <li>
+        <span class="color-chip" style="background:#000000;" title="#000000"></span>
+        vs
+        <span class="color-chip" style="background:#FFFFFF;" title="#FFFFFF"></span>
+        → typically near <strong>0</strong>.
+      </li>
+      <li>
+        Two identical colors (e.g.,
+        <span class="color-chip" style="background:#42A5F5;" title="#42A5F5"></span>
+        vs
+        <span class="color-chip" style="background:#42A5F5;" title="#42A5F5"></span>
+        ) → <strong>100</strong>.
+      </li>
     </ul>
 
     <h3>How it works</h3>
     <ul>
       <li>Rate as many pairs as you like; you can stop at any time.</li>
-      <li>Your <em>name</em> and your <em>completed ratings count</em> are stored only in your browser (local storage) to show progress. You can erase them with “Reset”.</li>
+      <li>Your name and your completed ratings count are stored only in your browser (local storage) to show progress. You can erase them with “Reset”.</li>
       <li>Each rating you submit is sent to our server with: name, Color A, Color B, and your score (0–100).</li>
     </ul>
 
@@ -97,9 +117,10 @@
 
 <script>
   // === Configuration ===
-  const BACKEND_URL = 'http://localhost:28080/submit'; // change if your backend runs elsewhere
+  // const BACKEND_URL = 'http://localhost:28080/submit';
+  const BACKEND_URL = '/submit';
 
-  // Predefined pairs (to gather many ratings on comparable stimuli)
+  // Predefined color pairs (to gather many ratings on comparable stimuli)
   const PREDEFINED = [
       ['#FFD700', '#FFD700'],
       ['#964600', '#964600'],
@@ -151,23 +172,24 @@
       ['#B98602', '#4904E4'],
   ];
 
-  // Random color helpers
-  function randHex() {
-    return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0').toUpperCase();
-  }
-  function nextRandomPair() {
-    let a = randHex();
-    let b = randHex();
-    // prevent identical randoms too often
-    if (a === b) b = randHex();
-    return [a, b];
-  }
-
-  // Queue that starts with predefined, then infinite randoms
-  let queue = PREDEFINED.slice();
+  let lastIndex = -1;
   function nextPair() {
-    if (queue.length > 0) return queue.shift();
-    return nextRandomPair();
+    let idx;
+    if (PREDEFINED.length === 1) {
+      idx = 0;
+    } else {
+      do {
+        idx = Math.floor(Math.random() * PREDEFINED.length);
+      } while (idx === lastIndex);
+    }
+    lastIndex = idx;
+
+    // Randomly swap A and B
+    let [a, b] = PREDEFINED[idx];
+    if (Math.random() < 0.5) {
+      [a, b] = [b, a];
+    }
+    return [a, b];
   }
 
   // DOM
@@ -191,7 +213,7 @@
 
   // State
   let participant = localStorage.getItem(LS_NAME) || '';
-  let count = parseInt(localStorage.getItem(LS_COUNT) || '0', 10);
+  let count = parseInt(localStorage.getItem(LS_COUNT) || '0');
   let current = nextPair();
 
   function setPanel(showRating) {
@@ -214,14 +236,19 @@
     render();
   }
 
+  function resetSlider() {
+    slider.value = 50;
+    score.textContent = '50';
+  }
+
   function resetAll() {
     localStorage.removeItem(LS_NAME);
     localStorage.removeItem(LS_COUNT);
     participant = '';
     count = 0;
-    queue = PREDEFINED.slice();
+    lastIndex = -1;
     current = nextPair();
-    slider.value = 50; score.textContent = '50';
+    resetSlider();
     setPanel(false);
     render();
   }
@@ -239,7 +266,7 @@
       count += 1;
       localStorage.setItem(LS_COUNT, String(count));
       current = nextPair();
-      slider.value = 50; score.textContent = '50';
+      resetSlider();
       render();
     } catch (err) {
       console.error(err);
@@ -251,7 +278,7 @@
 
   function skip() {
     current = nextPair();
-    slider.value = 50; score.textContent = '50';
+    resetSlider();
     render();
   }
 
