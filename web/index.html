@@ -37,6 +37,42 @@
       margin: 0 0.25em;
       vertical-align: middle;
     }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+    .modal {
+      background: #fff;
+      max-width: 420px;
+      width: 100%;
+      margin: 16px;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.25);
+    }
+    .modal h3 {
+      margin-top: 0;
+    }
+    .modal p {
+      margin-bottom: 0.75em;
+    }
+    .modal-media {
+      text-align: center;
+      margin: 12px 0;
+    }
+    .modal-media img,
+    .modal-media iframe {
+      max-width: 100%;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
@@ -113,11 +149,23 @@
 
     <p class="muted center" style="margin-top:10px;">Completed ratings: <span id="done">0</span></p>
   </section>
+
+  <!-- Milestone popup -->
+  <div id="milestoneModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal">
+      <h3 id="milestoneTitle">Thank you!</h3>
+      <p id="milestoneText"></p>
+      <div id="milestoneMedia" class="modal-media"></div>
+      <div class="center" style="margin-top:10px;">
+        <button id="milestoneCloseBtn" class="primary">Continue</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
   // === Configuration ===
-  // const BACKEND_URL = 'http://localhost:28080/submit';
   const BACKEND_URL = '/submit';
 
   // Predefined color pairs (to gather many ratings on comparable stimuli)
@@ -172,6 +220,46 @@
       ['#B98602', '#4904E4'],
   ];
 
+  // Milestones: how many completed ratings → small celebration popup
+  const MILESTONES = {
+    10: {
+      title: "10 ratings – thank you!",
+      text: "You’ve just made the dataset noticeably better. Every rating helps this project.",
+      gif: "https://media.giphy.com/media/111ebonMs90YLu/giphy.gif",
+      youtube: null
+    },
+    50: {
+      title: "50 ratings – awesome!",
+      text: "That’s a serious contribution. You’re really helping the math behind color perception.",
+      gif: "https://media.giphy.com/media/11sBLVxNs7v6WA/giphy.gif",
+      youtube: null
+    },
+    100: {
+      title: "100 ratings – data hero!",
+      text: "This many ratings give very strong data. Thank you for your patience and curiosity.",
+      gif: null,
+      youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+    },
+    200: {
+      title: "200 ratings – wow!",
+      text: "You’ve gone way beyond what we expected from any participant. Huge thanks!",
+      gif: "https://media.giphy.com/media/ymFDudHcTn6I6vLGgd/giphy.gif",
+      youtube: null
+    },
+    500: {
+      title: "500 ratings – legend!",
+      text: "At this point you basically co-authored the dataset. The project is so much stronger thanks to you.",
+      gif: "https://media.giphy.com/media/wl6l9trsOaktq/giphy.gif",
+      youtube: null
+    },
+    1000: {
+      title: "1000 ratings – final boss of colors!",
+      text: "This is an extraordinary contribution. Thank you for pushing this project to the next level.<br/><br/><span style='color:#777;font-style:italic;'>This is the last milestone — if you were hoping for another surprise, don’t wait for it. Your contribution is already outrageously great!</span>",
+      gif: null,
+      youtube: "https://www.youtube.com/embed/Y6ljFaKRTrI"
+    }
+  };
+
   let lastIndex = -1;
   function nextPair() {
     let idx;
@@ -206,14 +294,21 @@
   const startBtn = document.getElementById('startBtn');
   const resetBtn = document.getElementById('resetBtn');
   const participantBadge = document.getElementById('participantBadge');
+  const milestoneModal = document.getElementById('milestoneModal');
+  const milestoneTitle = document.getElementById('milestoneTitle');
+  const milestoneText = document.getElementById('milestoneText');
+  const milestoneMedia = document.getElementById('milestoneMedia');
+  const milestoneCloseBtn = document.getElementById('milestoneCloseBtn');
 
   // Local storage keys
   const LS_NAME = 'cd_name';
   const LS_COUNT = 'cd_count';
+  const LS_MILESTONES = 'cd_milestones_reached';
 
   // State
   let participant = localStorage.getItem(LS_NAME) || '';
   let count = parseInt(localStorage.getItem(LS_COUNT) || '0');
+  let reachedMilestones = JSON.parse(localStorage.getItem(LS_MILESTONES) || '[]');
   let current = nextPair();
 
   function setPanel(showRating) {
@@ -241,12 +336,61 @@
     score.textContent = '50';
   }
 
+  function hasReachedMilestone(m) {
+    return reachedMilestones.indexOf(m) !== -1;
+  }
+
+  function markMilestone(m) {
+    if (!hasReachedMilestone(m)) {
+      reachedMilestones.push(m);
+      localStorage.setItem(LS_MILESTONES, JSON.stringify(reachedMilestones));
+    }
+  }
+
+  function showMilestoneModal(m) {
+    const cfg = MILESTONES[m];
+    if (!cfg) return;
+
+    milestoneTitle.textContent = cfg.title;
+    milestoneText.innerHTML = cfg.text;
+    milestoneMedia.innerHTML = '';
+
+    if (cfg.gif) {
+      const img = document.createElement('img');
+      img.src = cfg.gif;
+      img.alt = 'celebration';
+      milestoneMedia.appendChild(img);
+    } else if (cfg.youtube) {
+      const iframe = document.createElement('iframe');
+      iframe.width = "100%";
+      iframe.height = "230";
+      iframe.src = cfg.youtube;
+      iframe.title = "YouTube video player";
+      iframe.frameBorder = "0";
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      iframe.allowFullscreen = true;
+      milestoneMedia.appendChild(iframe);
+    }
+
+    milestoneModal.classList.add('show');
+    milestoneModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function maybeShowMilestone(currentCount) {
+    if (MILESTONES[currentCount] && !hasReachedMilestone(currentCount)) {
+      markMilestone(currentCount);
+      showMilestoneModal(currentCount);
+    }
+  }
+
   function resetAll() {
     localStorage.removeItem(LS_NAME);
     localStorage.removeItem(LS_COUNT);
     participant = '';
     count = 0;
     lastIndex = -1;
+    reachedMilestones = [];
     current = nextPair();
     resetSlider();
     setPanel(false);
@@ -268,6 +412,7 @@
       current = nextPair();
       resetSlider();
       render();
+      maybeShowMilestone(count);
     } catch (err) {
       console.error(err);
       alert('Could not submit rating. Is the backend running at ' + BACKEND_URL + ' ?');
@@ -288,6 +433,18 @@
   skipBtn.addEventListener('click', skip);
   startBtn.addEventListener('click', start);
   resetBtn.addEventListener('click', resetAll);
+  milestoneCloseBtn.addEventListener('click', () => {
+    milestoneModal.classList.remove('show');
+    milestoneModal.setAttribute('aria-hidden', 'true');
+    milestoneMedia.innerHTML = '';
+  });
+  milestoneModal.addEventListener('click', (e) => {
+    if (e.target === milestoneModal) {
+      milestoneModal.classList.remove('show');
+      milestoneModal.setAttribute('aria-hidden', 'true');
+      milestoneMedia.innerHTML = '';
+    }
+  });
 
   // Initial load
   if (participant) {
